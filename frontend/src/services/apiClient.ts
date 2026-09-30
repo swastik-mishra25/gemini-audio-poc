@@ -3,7 +3,19 @@
  * Notice: API keys are NEVER handled on the frontend.
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+function getBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!envUrl) {
+    return '/api';
+  }
+  const trimmed = envUrl.replace(/\/+$/, '');
+  if (trimmed.endsWith('/api')) {
+    return trimmed;
+  }
+  return `${trimmed}/api`;
+}
+
+const BASE_URL = getBaseUrl();
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public details?: unknown) {
@@ -13,7 +25,8 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${BASE_URL}${cleanEndpoint}`;
   
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
